@@ -1,0 +1,3 @@
+[submodule "Berry"]
+	path = Berry
+	url = https://github.com/berry-lang/berry.git
