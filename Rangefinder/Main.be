@@ -1,3 +1,5 @@
+# - Importing modules
+
 import Graphics
 import This
 import Pin
@@ -6,6 +8,8 @@ import string
 import Softwares
 
 # - Global variables
+
+# - - Graphics
 
 var Window = This.Get_Window()
 var Software = This.Get_This()
@@ -27,12 +31,14 @@ var Trigger_Pin_Spinbox = Graphics.Spinbox_Type()
 
 var Distance_Label = Graphics.Label_Type()
 
-var Next_Refresh = 0
+# - - Others
 
+var Next_Refresh = 0
 var Execute = true
 
 # - Functions
 
+# This function is used to create a row.
 def Set_Interface_Row(Parent, Row)
     Row.Create(Parent)
     Row.Set_Height(Graphics.Size_Content)
@@ -41,6 +47,7 @@ def Set_Interface_Row(Parent, Row)
     Row.Set_Flex_Alignment(Graphics.Flex_Alignment_Space_Evenly, Graphics.Flex_Alignment_Center, Graphics.Flex_Alignment_Center)
 end
 
+# This function is used to create a button.
 def Set_Interface_Button(Parent, Button, Text)
     Button.Create(Parent)
     Button.Add_Event(Software, Graphics.Event_Code_Clicked)
@@ -50,6 +57,7 @@ def Set_Interface_Button(Parent, Button, Text)
     Label.Set_Text(Text)
 end
 
+# This function is used to create a spinbox and its buttons.
 def Set_Interface_Spinbox(Parent, Spinbox, Text, Minus_Button, Plus_Button)	
 	Label = Graphics.Label_Type()
 	Label.Create(Parent)
@@ -67,33 +75,40 @@ def Set_Interface_Spinbox(Parent, Spinbox, Text, Minus_Button, Plus_Button)
 	Set_Interface_Button(Parent, Plus_Button, "+")
 end
 
+# This function is used to get the distance measured by the rangefinder.
 def Get_Distance()
+	# - Set pins mode
 	Pin.Set_Mode(Trigger_Pin_Spinbox.Get_Value(), Pin.Mode_Output)
 	Pin.Set_Mode(Echo_Pin_Spinbox.Get_Value(), Pin.Mode_Input)
 
+	# - Send a pulse
 	Pin.Digital_Write(Trigger_Pin_Spinbox.Get_Value(), Pin.Digital_State_Low)
 	This.Delay_Microseconds(2)
 	Pin.Digital_Write(Trigger_Pin_Spinbox.Get_Value(), Pin.Digital_State_High)
 	This.Delay_Microseconds(10)
 	Pin.Digital_Write(Trigger_Pin_Spinbox.Get_Value(), Pin.Digital_State_Low)
 
-	Duration = Pin.Get_Pulse_In(Echo_Pin_Spinbox.Get_Value(), Pin.Digital_State_High, 1000000)
+	Duration = Pin.Get_Pulse_In(Echo_Pin_Spinbox.Get_Value(), Pin.Digital_State_High, 1000000)	# Get the time it takes for the pulse to return.
 
-	return Duration * 0.0343 / 2
+	return Duration * 0.0343 / 2	# Since the speed of sound is 343 m/s, the distance is equal to the duration of the pulse divided by 2 and multiplied by 0.0343.
 end
 
+# This function is used to create the graphical interface.
 def Set_Interface()
+	# - Window
 	Window.Set_Title("Rangefinder")
 
 	Window_Body = Window.Get_Body()
 	Window_Body.Set_Flex_Flow(Graphics.Flex_Flow_Column)
 	Window_Body.Set_Flex_Alignment(Graphics.Flex_Alignment_Space_Evenly, Graphics.Flex_Alignment_Center, Graphics.Flex_Alignment_Center)
 
-	Set_Interface_Row(Window_Body, First_Row)
+	# - Body
 
+	# - - Enable
+
+	Set_Interface_Row(Window_Body, First_Row)
 	Enable_Label.Create(First_Row)
 	Enable_Label.Set_Text("Enable : ")
-	
 	Enable_Switch.Create(First_Row)
 	Enable_Switch.Clear_State(Graphics.State_Checked)
 
@@ -111,8 +126,9 @@ def Set_Interface()
 	Distance_Label.Set_Text("Distance : 0 cm")
 end
 
-
+# This function is used to execute the program.
 def Execute_Instruction(Instruction)
+	# - Graphics instructions
 	if Instruction.Get_Sender() == Graphics.Get_Pointer()
 		Target = Instruction.Graphics_Get_Target()
 		if Target == Plus_Echo_Button
@@ -128,6 +144,7 @@ def Execute_Instruction(Instruction)
 		elif Target == Echo_Pin_Spinbox
 			Pin.Set_Mode(Echo_Pin_Spinbox.Get_Value(), Pin.Mode_Input)
 		end
+	# - Software instructions
 	elif Instruction.Get_Sender() == Softwares.Get_Pointer()
 		if Instruction.Softwares_Get_Code() == Softwares.Event_Code_Close
 			Execute = false
@@ -140,11 +157,12 @@ end
 Set_Interface()
 
 while Execute
-
+	# - Execute instructions
 	if This.Instruction_Available() > 0
 		Execute_Instruction(This.Get_Instruction())
 	end
 
+	# - Refresh the distance if the switch is enabled.
 	if Enable_Switch.Has_State(Graphics.State_Checked) == true
 		if System.Get_Up_Time_Milliseconds() > Next_Refresh
 			Distance = Get_Distance()
@@ -167,6 +185,6 @@ while Execute
 		end
 	end
 
-	This.Delay(50)
+	This.Delay(50)	# Delay to reduce CPU usage
 end
 
